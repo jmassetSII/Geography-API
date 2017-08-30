@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ClassPathResource;
@@ -46,6 +47,8 @@ public class UserController {
     private UserValidator userValidator;
     
     private MailSender mailSender;
+    
+    private Logger LOGGER;
     
    //private IReport reportEngine;
 
@@ -125,6 +128,8 @@ public class UserController {
     
     @RequestMapping(value="/detailVillePDF/{villeId}", method = RequestMethod.GET)
     public void genereteDetailVille(@PathVariable("villeId") Long villeId) throws Exception, IOException {
+    	
+    	LOGGER.debug("get the details of town : " + villeId);
     	
 //    	VilleDto villeDto = geographyService.getDetailVille(villeId);
 //    	final String reportName = villeDto.getNom();
