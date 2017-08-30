@@ -131,8 +131,8 @@ public class UserController {
     	
     	LOGGER.debug("get the details of town : " + villeId);
     	
-//    	VilleDto villeDto = geographyService.getDetailVille(villeId);
-//    	final String reportName = villeDto.getNom();
+    	VilleDto villeDto = geographyService.getDetailVille(villeId);
+    	final String reportName = villeDto.getNom();
 //    	
 //    	IReportRunnable runnable = reportEngine.openReportDesign(new ClassPathResource("Birt.rptdesign").getInputStream());
 //    	IRunAndRenderTask runAndRenderTask = reportEngine.createRunAndRenderTask(runnable);
