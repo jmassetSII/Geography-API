@@ -223,8 +223,6 @@ public class UserController {
     	//Setter les options pdf définies pour générer le rendu
     	runAndRenderTask.setRenderOption(pdfOptions);
 
-    	
-    	
     	//Exécuter la génération du rapport
     	try {
 			runAndRenderTask.run();
