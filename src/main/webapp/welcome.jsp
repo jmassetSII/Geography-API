@@ -27,7 +27,8 @@
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
         </form>
 
-        <h2>Bienvenue ${pageContext.request.userPrincipal.name} | <a onclick="document.forms['logoutForm'].submit()"><i class="glyphicon glyphicon-off"></i></a></h2>
+        <h2>Bienvenue <strong>${pageContext.request.userPrincipal.name}</strong>
+        <c:if test="${pageContext.request.userPrincipal.name == 'DarthVador'}">, que voulez vous détruire aujourd'hui?</c:if> | <a onclick="document.forms['logoutForm'].submit()"><i class="glyphicon glyphicon-off"></i></a></h2>
         <br><br>
         
         <form id="departementSelect">

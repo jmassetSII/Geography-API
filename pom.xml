@@ -84,14 +84,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.eclipse.birt.runtime</groupId> -->
-<!-- 			<artifactId>org.eclipse.birt.runtime</artifactId> -->
-<!-- 			<version>4.5.0a</version> -->
-<!-- 		</dependency> -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jersey</artifactId>
+			<groupId>org.eclipse.birt.runtime</groupId>
+			<artifactId>org.eclipse.birt.runtime</artifactId>
+			<version>3.7.2.v20120214-1408</version>
 		</dependency>
 	</dependencies>
 

@@ -4,12 +4,20 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
+import javax.servlet.http.HttpServletRequest;
+import org.eclipse.birt.core.exception.BirtException;
+import org.eclipse.birt.core.framework.Platform;
+import org.eclipse.birt.report.engine.api.EngineConfig;
+import org.eclipse.birt.report.engine.api.EngineException;
+import org.eclipse.birt.report.engine.api.IPDFRenderOption;
+import org.eclipse.birt.report.engine.api.IRenderOption;
+import org.eclipse.birt.report.engine.api.IReportEngine;
+import org.eclipse.birt.report.engine.api.IReportEngineFactory;
+import org.eclipse.birt.report.engine.api.IReportRunnable;
+import org.eclipse.birt.report.engine.api.IRunAndRenderTask;
+import org.eclipse.birt.report.engine.api.PDFRenderOption;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,6 +39,10 @@ import com.springjpa.auth.service.SecurityService;
 import com.springjpa.auth.service.UserService;
 import com.springjpa.auth.validator.UserValidator;
 
+/**
+ * @author jmasset
+ *
+ */
 @Controller
 public class UserController {
 	
@@ -48,10 +60,17 @@ public class UserController {
     
     private MailSender mailSender;
     
-    private Logger LOGGER;
+    private IReportEngine reportEngine;
     
-   //private IReport reportEngine;
-
+    private static final String REPORT_PATH = "C:\\Users\\jmasset\\Documents\\workspace-sts-3.9.0\\springAppJPA\\src\\main\\webapp\\report\\";
+    private static final String REPORT_PATH_PDF = "C:\\Users\\jmasset\\Documents\\birt_reports\\";
+    
+    
+    /**
+     * Afficher le formulaire d 'inscription
+     * @param model
+     * @return 
+     */
     @RequestMapping(value = "/registration", method = RequestMethod.GET)
     public String registration(Model model) {
     	
@@ -60,6 +79,13 @@ public class UserController {
         return "registration";
     }
 
+    /**
+     * Vérifier les données saisies et enregistrer les infos d'inscription 
+     * @param userForm
+     * @param bindingResult
+     * @param model
+     * @return
+     */
     @RequestMapping(value = "/registration", method = RequestMethod.POST)
     public String registration(@ModelAttribute("userForm") User userForm, BindingResult bindingResult, Model model) {
         userValidator.validate(userForm, bindingResult);
@@ -75,6 +101,13 @@ public class UserController {
         return "redirect:/welcome";
     }
 
+    /**
+     * Vérifier la concordance login / mdp
+     * @param model
+     * @param error
+     * @param logout
+     * @return
+     */
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public String login(Model model, String error, String logout) {
         if (error != null)
@@ -86,12 +119,23 @@ public class UserController {
         return "login";
     }
     
+    /**
+     * Afficher la page de reset du password
+     * @return
+     */
     @RequestMapping(value = "/resetPassword", method = RequestMethod.GET)
     public String resetPassword() {
     
     	return "forgotPassword";
     }
     
+    /**
+     * Lancer le process de reset du password et envoi par mail au user
+     * @param request
+     * @param email
+     * @param model
+     * @return
+     */
     @RequestMapping(value = "/resetPassword", method = RequestMethod.POST)
     @ResponseBody
     public String resetPassword(HttpServletRequest request, @RequestParam("email") String email, Model model) {
@@ -113,11 +157,21 @@ public class UserController {
     	return "welcome";
     }
 
+    /**
+     * Afficher la page de bienvenue de l'appli
+     * @param model
+     * @return
+     */
     @RequestMapping(value = {"/", "/welcome"}, method = RequestMethod.GET)
     public String welcome(Model model) {
         return "welcome";
     }
     
+    /**
+     * Afficher la liste des villes une fois un département sélectionné
+     * @param departement
+     * @return
+     */
     @RequestMapping(value ="/villesList/{departement}", method = RequestMethod.GET)
     @ResponseBody
     public List<VilleDto> listVilles(@PathVariable("departement") String departement) {
@@ -126,31 +180,61 @@ public class UserController {
     	return villes;
     }
     
-    @RequestMapping(value="/detailVillePDF/{villeId}", method = RequestMethod.GET)
-    public void genereteDetailVille(@PathVariable("villeId") Long villeId) throws Exception, IOException {
+    /**
+     * Afficher les infos détaillées d'une ville via un rapport PDF
+     * @param id
+     * @return
+     * @throws IOException
+     * @throws BirtException
+     */
+    @RequestMapping(value="/detailVillePDF/{idVille}", method = RequestMethod.GET)
+    
+    public String generateDetailVille(@PathVariable("idVille") Long id) throws IOException, BirtException {
+    
+    	VilleDto ville = geographyService.getDetailVille(id);
+    	String reportName = ville.getNom();
+    	String imageUri = "http://maps.googleapis.com/maps/api/staticmap?center=" + reportName + "&zoom=14&size=600x400&&scale=2&style=feature:landscape.man_made|color:0x3D85C6";
     	
-    	LOGGER.debug("get the details of town : " + villeId);
+    	//Configuration du moteur BIRT et indiquer le chemin ou se trouve le template .rptDesign
+    	EngineConfig config = new EngineConfig();
+    	config.setBIRTHome(REPORT_PATH);
+    	Platform.startup(config);
+    	IReportEngineFactory factory = (IReportEngineFactory) Platform.createFactoryObject(IReportEngineFactory.EXTENSION_REPORT_ENGINE_FACTORY);
+    	reportEngine = factory.createReportEngine(config);
     	
-    	VilleDto villeDto = geographyService.getDetailVille(villeId);
-    	final String reportName = villeDto.getNom();
-//    	
-//    	IReportRunnable runnable = reportEngine.openReportDesign(new ClassPathResource("Birt.rptdesign").getInputStream());
-//    	IRunAndRenderTask runAndRenderTask = reportEngine.createRunAndRenderTask(runnable);
-//    	runAndRenderTask.setParameterValue("nomVille", reportName);
-//    	
-//    	IRenderOption pdfOptions = new PDFRenderOption();
-//    	pdfOptions.setOption(IPDFRenderOption.PAGE_OVERFLOW, IPDFRenderOption.FIT_TO_PAGE_SIZE);
-//    	pdfOptions.setOutputFormat(IRenderOption.OUTPUT_FORMAT_PDF);
-//    	final String output = reportName + "." + IRenderOption.OUTPUT_FORMAT_PDF;
-//    	pdfOptions.setOutputFileName(output);
-//    	
-//    	
-//    	try {
-//			runAndRenderTask.run();
-//		} catch (EngineException e) {
-//			e.printStackTrace();
-//		}
-//		runAndRenderTask.close();
+    	//Récupérer et ouvrir le template .rptDesign
+    	IReportRunnable runnable = reportEngine.openReportDesign(REPORT_PATH + "geography.rptdesign");
+    	
+		//Lancement de l'état du rapport
+		IRunAndRenderTask runAndRenderTask = reportEngine.createRunAndRenderTask(runnable);
+    	
+    	//Ajustement des options pour la générations du PDF (format, alignement, nom et emplacement du rapport...)
+    	IRenderOption pdfOptions = new PDFRenderOption();
+    	pdfOptions.setOption(IPDFRenderOption.PAGE_OVERFLOW, IPDFRenderOption.FIT_TO_PAGE_SIZE);
+    	pdfOptions.setOutputFormat(IRenderOption.OUTPUT_FORMAT_PDF);
+    	final String output = REPORT_PATH_PDF + reportName + "." + IRenderOption.OUTPUT_FORMAT_PDF;
+    	pdfOptions.setOutputFileName(output);
+    	
+    	//Setter les paramètres pour permettre de récupérer des infos dynamiques à afficher dans le rapport
+    	runAndRenderTask.setParameterValue("nomVille", reportName);
+    	runAndRenderTask.setParameterValue("idVille", String.valueOf(id));
+    	runAndRenderTask.setParameterValue("imageUri", imageUri);
+    	
+    	//Setter les options pdf définies pour générer le rendu
+    	runAndRenderTask.setRenderOption(pdfOptions);
+
+    	
+    	
+    	//Exécuter la génération du rapport
+    	try {
+			runAndRenderTask.run();
+		} catch (EngineException e) {
+			e.printStackTrace();
+		}
+		runAndRenderTask.close();
+		
+		
+		return "redirect:/welcome";
     }
     
     
@@ -166,6 +250,7 @@ public class UserController {
     	
     	return email;
     }
+    
     
     @ModelAttribute (value = "departementList")
     public List<DepartementDto> listDepartements() {
